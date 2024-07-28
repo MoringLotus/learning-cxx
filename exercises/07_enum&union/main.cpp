@@ -6,6 +6,9 @@
 // 在 `enum` 中定义标识符等价于定义 constexpr 常量，
 // 这些标识符不需要前缀，可以直接引用。
 // 因此 `enum` 定义会污染命名空间。
+
+// 此处定义 COLOR_RED = 31
+// 剩下的三个一次递增一
 enum ColorEnum : unsigned char {
     COLOR_RED = 31,
     COLOR_GREEN,
@@ -23,6 +26,9 @@ enum class Color : int {
     Blue,
 };
 
+//接受到的参数是enum class 的
+//需要用union的操作转换为 colorEnum
+//接受的时候用一种， 返回时候用另外一种 
 ColorEnum convert_by_pun(Color c) {
     // READ: <https://zh.cppreference.com/w/cpp/language/union>
     // `union` 表示在同一内存位置存储的不同类型的值。
@@ -37,7 +43,7 @@ ColorEnum convert_by_pun(Color c) {
 
     TypePun pun;
     // TODO: 补全类型双关转换
-
+    pun.c = c;
     return pun.e;
 }
 
