@@ -1,15 +1,18 @@
 #include "../exercise.h"
 
- unsigned long long fibonacci(int i) {
-    switch (i) {
-        case 0:
-            return 0;
-        case 1:
-            return 1;
-        default:
-            return fibonacci(i - 1) + fibonacci(i - 2);
+unsigned long long fibonacci(int i) {
+    if (i == 0) return 0;
+    if (i == 1) return 1;
+
+    unsigned long long a = 0, b = 1, c;
+    for (int n = 2; n <= i; ++n) {
+        c = a + b;
+        a = b;
+        b = c;
     }
+    return b;
 }
+
 
 int main(int argc, char **argv) {
     auto FIB20 = fibonacci(20);
