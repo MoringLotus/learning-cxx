@@ -8,8 +8,14 @@ struct Tensor4D {
     T *data;
 
     Tensor4D(unsigned int const shape_[4], T const *data_) {
+        for (int i = 0; i < 4; ++i) {
+            shape[i] = shape_[i]; // 复制形状数组
+        }
         unsigned int size = 1;
         // TODO: 填入正确的 shape 并计算 size
+        for (int i = 0; i < 4; ++i) {
+            size *= shape[i];
+        }
         data = new T[size];
         std::memcpy(data, data_, size * sizeof(T));
     }
@@ -26,8 +32,45 @@ struct Tensor4D {
     // `others` 长度为 1 但 `this` 长度不为 1 的维度将发生广播计算。
     // 例如，`this` 形状为 `[1, 2, 3, 4]`，`others` 形状为 `[1, 2, 1, 4]`，
     // 则 `this` 与 `others` 相加时，3 个形状为 `[1, 2, 1, 4]` 的子张量各自与 `others` 对应项相加。
-    Tensor4D &operator+=(Tensor4D const &others) {
-        // TODO: 实现单向广播的加法
+     Tensor4D &operator+=(Tensor4D const &others) {
+        // 检查形状是否兼容
+        for (int i = 0; i < 4; ++i) {
+            if (shape[i] != others.shape[i] && shape[i] != 1 && others.shape[i] != 1) {
+                throw std::invalid_argument("Incompatible shapes for addition.");
+            }
+        }
+
+        // 计算每个维度的步长
+        unsigned int stride[4] = {};
+        stride[0] = shape[1] * shape[2] * shape[3];
+        stride[1] = shape[2] * shape[3];
+        stride[2] = shape[3];
+        stride[3] = 1;
+
+        // 计算 others 的步长，考虑广播
+        unsigned int other_stride[4] = {};
+        for (int i = 0; i < 4; ++i) {
+            other_stride[i] = (others.shape[i] == 1) ? 0 : others.shape[(i + 1) % 4] * other_stride[(i + 1) % 4];
+        }
+
+        // 执行加法
+        for (unsigned int i = 0; i < shape[0]; ++i) {
+            for (unsigned int j = 0; j < shape[1]; ++j) {
+                for (unsigned int k = 0; k < shape[2]; ++k) {
+                    for (unsigned int l = 0; l < shape[3]; ++l) {
+                        // 计算 others 的索引，考虑广播
+                        unsigned int indexOther = 0;
+                        if (others.shape[0] == 1) indexOther += i % others.shape[0];
+                        if (others.shape[1] == 1) indexOther += j % others.shape[1] * other_stride[1];
+                        if (others.shape[2] == 1) indexOther += k % others.shape[2] * other_stride[2];
+                        if (others.shape[3] == 1) indexOther += l % others.shape[3] * other_stride[3];
+
+                        data[i * stride[0] + j * stride[1] + k * stride[2] + l] +=
+                            others.data[indexOther];
+                    }
+                }
+            }
+        }
         return *this;
     }
 };
