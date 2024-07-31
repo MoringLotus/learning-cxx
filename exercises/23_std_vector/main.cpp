@@ -30,6 +30,7 @@ int main(int argc, char **argv) {
             vec.pop_back();
             ASSERT(vec.size() == 5, "Fill in the correct value.");
             ASSERT(sizeof(vec) == 24, "Fill in the correct value.");
+
         }
         {
             vec[4] = 6;
