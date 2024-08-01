@@ -8,14 +8,11 @@ struct Tensor4D {
     T *data;
 
     Tensor4D(unsigned int const shape_[4], T const *data_) {
-        for (int i = 0; i < 4; ++i) {
-            shape[i] = shape_[i]; // 复制形状数组
-        }
         unsigned int size = 1;
+        for(int i = 0; i <= 3; i++) size = size * shape_[i];
         // TODO: 填入正确的 shape 并计算 size
-        for (int i = 0; i < 4; ++i) {
-            size *= shape[i];
-        }
+        for(int i = 0; i <= 3; i++)
+            shape[i] = shape_[i];
         data = new T[size];
         std::memcpy(data, data_, size * sizeof(T));
     }
@@ -32,52 +29,40 @@ struct Tensor4D {
     // `others` 长度为 1 但 `this` 长度不为 1 的维度将发生广播计算。
     // 例如，`this` 形状为 `[1, 2, 3, 4]`，`others` 形状为 `[1, 2, 1, 4]`，
     // 则 `this` 与 `others` 相加时，3 个形状为 `[1, 2, 1, 4]` 的子张量各自与 `others` 对应项相加。
-     Tensor4D &operator+=(Tensor4D const &others) {
+    Tensor4D &operator+=(Tensor4D const &others) {
         // 检查形状是否兼容
-        for (int i = 0; i < 4; ++i) {
-            if (shape[i] != others.shape[i] && shape[i] != 1 && others.shape[i] != 1) {
-                throw std::invalid_argument("Incompatible shapes for addition.");
-            }
-        }
-
-        // 计算每个维度的步长
-        unsigned int stride[4] = {};
-        stride[0] = shape[1] * shape[2] * shape[3];
-        stride[1] = shape[2] * shape[3];
-        stride[2] = shape[3];
-        stride[3] = 1;
-
-        // 计算 others 的步长，考虑广播
-        unsigned int other_stride[4] = {};
-        for (int i = 0; i < 4; ++i) {
-            other_stride[i] = (others.shape[i] == 1) ? 0 : others.shape[(i + 1) % 4] * other_stride[(i + 1) % 4];
-        }
-
-        // 执行加法
-        for (unsigned int i = 0; i < shape[0]; ++i) {
-            for (unsigned int j = 0; j < shape[1]; ++j) {
-                for (unsigned int k = 0; k < shape[2]; ++k) {
-                    for (unsigned int l = 0; l < shape[3]; ++l) {
-                        // 计算 others 的索引，考虑广播
-                        unsigned int indexOther = 0;
-                        if (others.shape[0] == 1) indexOther += i % others.shape[0];
-                        if (others.shape[1] == 1) indexOther += j % others.shape[1] * other_stride[1];
-                        if (others.shape[2] == 1) indexOther += k % others.shape[2] * other_stride[2];
-                        if (others.shape[3] == 1) indexOther += l % others.shape[3] * other_stride[3];
-
-                        data[i * stride[0] + j * stride[1] + k * stride[2] + l] +=
-                            others.data[indexOther];
-                    }
+        unsigned int tensor_index_this [4] = {shape[1] * shape[2] * shape[3], shape[2]*shape[3], shape[3], 1};
+        unsigned int tensor_index_other[4] = {others.shape[1] * others.shape[2] * others.shape[3], others.shape[2]*others.shape[3], others.shape[3], 1};
+        for(int i = 0; i < shape[0]; i++){
+            for(int j = 0; j < shape[1]; j++){
+                for(int k = 0; k <shape[2]; k++){
+                    for(int p = 0; p < shape[3]; p++){
+                        int target_this   = i * tensor_index_this[0] + j * tensor_index_this[1] + k * tensor_index_this[2] + p *tensor_index_this[3];
+                        int i_ = others.shape[0] == 1 ? 0 : i;
+                        int j_ = others.shape[1] == 1 ? 0 : j;
+                        int k_ = others.shape[2] == 1 ? 0 : k;
+                        int p_ = others.shape[3] == 1 ? 0 : p;
+                        int target_others =  i_ * tensor_index_other[0] + j_ * tensor_index_other[1] + k_ * tensor_index_other[2] + p_ *tensor_index_other[3];
+                        data[target_this] = data[target_this] + others.data[target_others]; 
+                
                 }
             }
         }
+
         return *this;
     }
+}
+
+        // 长宽高其实是我们抽象（shape）出来的，本质上还是一个一维数组
+        // 1 特征图个数
+        // 2 矩阵个数
+        // 3和4 是矩阵长宽
 };
 
 // ---- 不要修改以下代码 ----
 int main(int argc, char **argv) {
     {
+        // 3 是行 4是列
         unsigned int shape[]{1, 2, 3, 4};
         // clang-format off
         int data[]{
